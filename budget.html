@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Budget vs Actual &mdash; PropertyPistol ROI Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2726%27 fill=%27none%27 stroke=%27%23FB6A02%27 stroke-width=%276%27/%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%278%27 fill=%27%23FB6A02%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="content">
+      <section class="filters" id="filters"></section>
+
+      <div class="chart-grid">
+        <div class="chart-card"><h4>Budget vs Spent &mdash; Launch + Sustenance</h4><div class="sub">City-wise, Aug 2026 (&#8377;)</div><div class="chart-box"><canvas id="chBud"></canvas></div></div>
+        <div class="chart-card"><h4>Utilisation %</h4><div class="sub">Spent as a share of allocated budget</div><div class="chart-box"><canvas id="chUtil"></canvas></div></div>
+      </div>
+      <div class="card"><div class="card-head dark"><h3>Launch + Sustenance</h3><span class="badge">Planned</span></div><div class="tbl-wrap"><table class="tbl" id="tblLS"></table></div></div>
+      <div class="card"><div class="card-head dark"><h3>Launch + Sustenance &ndash; Un-Planned</h3><span class="badge">Un-Planned</span></div><div class="tbl-wrap"><table class="tbl" id="tblUP"></table></div></div>
+      <div class="card"><div class="card-head dark"><h3>Builtup</h3><span class="badge">EOI</span></div><div class="tbl-wrap"><table class="tbl" id="tblBU"></table></div></div>
+    </div>
+  </div>
+</div>
+<script src="js/chart.umd.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/budget.js"></script>
+</body>
+</html>
