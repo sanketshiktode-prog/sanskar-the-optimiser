@@ -78,10 +78,7 @@
   /* ---------------- KPI band ---------------- */
   function renderKPIs() {
     const r = activeRegion();
-    const scope =
-      (!S.city || S.city.length === 0)
-        ? 'All regions'
-        : S.city.join(', ');
+    const scope = PPcityLabel();
 
     const cards = [
       ['rupee', 'Total Revenue', fmtCr(r.ns), 'MTD net booking value'],
@@ -187,7 +184,7 @@
         const cls =
           r.region === 'Total'
             ? 'total'
-            : (r.region === S.city ? 'hl' : '');
+            : ((S.city || []).includes(r.region) ? 'hl' : '');
 
         return `<tr class="${cls}">` +
           regionCells(r)
@@ -403,14 +400,14 @@
           );
 
         note =
-          `Filtered to <b>${S.source}</b> — cost &amp; leads matched from the MIS Live Campaign register against the arithmetic-verified SM→project mapping (project-name matching is approximate, so figures may slightly under-count spend on unmapped/renamed campaigns). Budget, Target Revenue and QL columns are unaffected by the source filter.`;
+          `Filtered to <b>${PPsrcLabel()}</b> — cost &amp; leads matched from the MIS Live Campaign register against the arithmetic-verified SM→project mapping (project-name matching is approximate, so figures may slightly under-count spend on unmapped/renamed campaigns). Budget, Target Revenue and QL columns are unaffected by the source filter.`;
 
       } else {
 
         const cityKey =
-          S.city === 'All Regions'
-            ? 'All Regions'
-            : S.city;
+          (S.city && S.city.length === 1)
+            ? S.city[0]
+            : 'All Regions';
 
         const srcRow =
           (D.sourceWise[cityKey] || [])
@@ -475,7 +472,9 @@
       }).join('');
 
     const isBlr =
-      S.city === 'Bangalore';
+      S.city &&
+      S.city.length === 1 &&
+      S.city[0] === 'Bangalore';
 
     const srcTotalCells =
       !srcActive
@@ -509,11 +508,9 @@
       '</tbody>';
 
     document.getElementById('smvTitle').textContent =
-      (S.city === 'All Regions'
-        ? 'All Regions'
-        : S.city) +
+      PPcityLabel() +
       ' – SM / Manager Summary' +
-      (srcActive ? ' · ' + S.source : '');
+      (srcActive ? ' · ' + PPsrcLabel() : '');
 
     document.getElementById('smvNote').innerHTML =
       note;
@@ -1373,7 +1370,7 @@
       c =>
         regs.map(
           r =>
-            r.region === S.city
+            (S.city || []).includes(r.region)
               ? C.orange
               : c
         );
