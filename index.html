@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROI Dashboard &mdash; PropertyPistol</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2726%27 fill=%27none%27 stroke=%27%23FB6A02%27 stroke-width=%276%27/%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%278%27 fill=%27%23FB6A02%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<!-- Select2 & Daterangepicker CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="content">
+
+      <section class="filters" id="filters"></section>
+
+      <section class="kpis" id="kpis"></section>
+
+      <nav class="tabs" id="tabs">
+        <button class="tab" data-tab="roi">ROI Summary</button>
+        <button class="tab" data-tab="sm">SM / Manager View</button>
+        <button class="tab" data-tab="project">Project Performance</button>
+        <button class="tab" data-tab="project_summary">Project Summary</button>
+      </nav>
+
+      <!-- ============ ROI SUMMARY ============ -->
+      <section class="tab-panel" id="panel-roi">
+        <div class="card">
+          <div class="card-head">
+            <h3>ROI Summary &ndash; Region Wise</h3>
+            <span class="hint">Ties exactly to the MIS pivot &middot; Daily ROI Report, 5 Aug 2026</span>
+          </div>
+          <div class="tbl-wrap"><table class="tbl" id="tblRegion"></table></div>
+        </div>
+      </section>
+
+      <!-- ============ SM / MANAGER VIEW ============ -->
+      <section class="tab-panel" id="panel-sm">
+        <div class="card">
+          <div class="card-head">
+            <h3 id="smvTitle">SM / Manager Summary</h3>
+            <span class="hint">Budgets &amp; targets from Spend Tracker Aug-26 &middot; SM totals reconcile to the paisa</span>
+          </div>
+          <div class="tbl-wrap"><table class="tbl" id="tblManager"></table></div>
+        </div>
+        <div class="note" id="smvNote"></div>
+      </section>
+
+      <!-- ============ PROJECT PERFORMANCE ============ -->
+      <section class="tab-panel" id="panel-project">
+        <div class="chart-grid">
+          <div class="chart-card">
+            <h4>Revenue vs Cost</h4>
+            <div class="sub">Net sales vs marketing cost by region (&#8377; Cr) &middot; Mar&ndash;Aug 2026</div>
+            <div class="chart-box"><canvas id="chRevCost"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h4>Leads vs QL</h4>
+            <div class="sub">Presales leads vs qualified leads by region</div>
+            <div class="chart-box"><canvas id="chLeadsQL"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head dark">
+            <h3>Launch + Sustenance &ndash; Planned</h3>
+            <span class="badge" id="badgePlanned">Live</span>
+            <span class="hint" id="hintPlanned"></span>
+          </div>
+          <div class="tbl-wrap"><table class="tbl" id="tblPlanned"></table></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head dark">
+            <h3>Launch + Sustenance &ndash; Un-Planned</h3>
+            <span class="badge" id="badgeUnplanned">On Hold</span>
+            <span class="hint" id="hintUnplanned"></span>
+          </div>
+          <div class="tbl-wrap"><table class="tbl" id="tblUnplanned"></table></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head dark">
+            <h3>Builtup</h3>
+            <span class="badge" id="badgeBuiltup">Live</span>
+            <span class="hint" id="hintBuiltup"></span>
+          </div>
+          <div class="tbl-wrap"><table class="tbl" id="tblBuiltup"></table></div>
+        </div>
+
+        <div class="note" id="projNote"></div>
+      </section>
+
+      <!-- ============ PROJECT SUMMARY ============ -->
+      <section class="tab-panel" id="panel-project_summary">
+        <div class="card">
+          <div class="card-head">
+            <h3>All Project List</h3>
+            <span class="hint">Dummy YTD Data & ROI Summary Fields</span>
+          </div>
+          <div class="tbl-wrap"><table class="tbl" id="tblProjectSummary"></table></div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script src="js/chart.umd.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
