@@ -1220,3 +1220,163 @@ table.tbl{
 #panel-aop_project .tableWrap::-webkit-scrollbar-thumb:hover {
   background: #8e939b;
 }
+
+/* ---------- Excel-style checkbox multi-select (.ms) ---------- */
+
+.ms{
+  position:relative;
+}
+
+.ms-btn{
+  width:100%;
+  height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  border:1px solid #DDE1E8;
+  border-radius:9px;
+  background:#FBFCFD;
+  padding:0 11px;
+  font-size:12.8px;
+  font-weight:600;
+  color:#111;
+  font-family:inherit;
+  cursor:pointer;
+  transition:border .15s,box-shadow .15s;
+}
+
+.ms-btn:focus,
+.ms.open .ms-btn{
+  border-color:var(--orange);
+  box-shadow:0 0 0 3px rgba(251,106,2,.14);
+  background:#fff;
+  outline:none;
+}
+
+.ms-text{
+  flex:1;
+  text-align:left;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.ms.has-sel .ms-text{
+  color:var(--orange);
+}
+
+.ms-caret{
+  flex:0 0 auto;
+  color:var(--muted);
+  font-size:10px;
+  transition:transform .15s;
+}
+
+.ms.open .ms-caret{
+  transform:rotate(180deg);
+}
+
+.ms-panel{
+  display:none;
+  position:absolute;
+  top:calc(100% + 6px);
+  left:0;
+  right:0;
+  min-width:220px;
+  background:#fff;
+  border:1px solid #DDE1E8;
+  border-radius:10px;
+  box-shadow:var(--sh-sm);
+  z-index:80;
+  overflow:hidden;
+}
+
+.ms.open .ms-panel{
+  display:block;
+}
+
+.ms-search{
+  width:100%;
+  height:34px;
+  border:none;
+  border-bottom:1px solid var(--line);
+  background:#FBFCFD;
+  padding:0 12px;
+  font-size:12.5px;
+  font-family:inherit;
+  font-weight:500;
+  color:#111;
+  outline:none;
+}
+
+.ms-actions{
+  display:flex;
+  gap:6px;
+  padding:7px 8px;
+  border-bottom:1px solid var(--line);
+  background:#FAFBFC;
+}
+
+.ms-actions button{
+  flex:1;
+  height:26px;
+  border:1px solid #DDE1E8;
+  border-radius:7px;
+  background:#fff;
+  font-size:11px;
+  font-weight:700;
+  color:#333;
+  font-family:inherit;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:border .12s,color .12s;
+}
+
+.ms-actions button:hover{
+  border-color:var(--orange);
+  color:var(--orange);
+}
+
+.ms-list{
+  max-height:230px;
+  overflow:auto;
+  padding:5px 0;
+}
+
+.ms-opt{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:7px 12px;
+  font-size:12.6px;
+  font-weight:500;
+  color:#111;
+  cursor:pointer;
+  user-select:none;
+}
+
+.ms-opt:hover{
+  background:var(--orange-soft);
+}
+
+.ms-opt input[type=checkbox]{
+  width:15px;
+  height:15px;
+  flex:0 0 auto;
+  margin:0;
+  accent-color:var(--orange);
+  cursor:pointer;
+}
+
+.ms-opt span{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.ms-none{
+  padding:10px 12px;
+  font-size:12px;
+  color:var(--muted);
+}
