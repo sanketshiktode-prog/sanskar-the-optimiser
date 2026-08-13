@@ -1058,8 +1058,8 @@ table.tbl{
 /* Checkbox sizing */
 .project-focus-checkbox,
 .project-aop-checkbox {
-  width: 17px;
-  height: 17px;
+  width: 12px;
+  height: 12px;
   cursor: pointer;
   accent-color: #fb6a02;
 }
@@ -1170,8 +1170,8 @@ table.tbl{
 /* Checkbox */
 .project-focus-checkbox,
 .project-aop-checkbox {
-  width: 18px;
-  height: 18px;
+  width: 12px;
+  height: 12px;
   cursor: pointer;
   accent-color: #fb6a02;
 }
