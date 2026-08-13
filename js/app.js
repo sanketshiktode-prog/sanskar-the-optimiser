@@ -6,63 +6,59 @@
 
   /* ---------- filter state (URL-backed) ---------- */
   const q = new URLSearchParams(location.search);
-  const L = v => window.PPparseList(v);
+  const getArr = k => { const v = q.getAll(k); return v.length ? v : []; };
   const S = window.PPState = {
-    scope:  q.get('scope')  || 'All Regions',       // login-level region scope
-    cities: L(q.get('city')),
-    managers: L(q.get('sm')),
-    sources: L(q.get('src')),
-    devs:   L(q.get('dev')),
-    projStatus: L(q.get('pstatus')),
-    realisation: L(q.get('real')),
-    projects: L(q.get('proj')),
-    status: q.get('status') || 'All Status',        // campaign status (single)
-    star:   q.get('star') === '1',
-    period: q.get('period') || 'all',
+    city:   getArr('city'),
+    sm:     getArr('sm'),
+    status: getArr('status'),
+    projectStatus: getArr('projectStatus'),
+    source: getArr('source'),
+    developer: getArr('developer'),
+    project: getArr('project'),
+    subProject: getArr('subProject'),
+    projectMarks: getArr('projectMarks'),
     from:   q.get('from')   || '2026-08-01',
     to:     q.get('to')     || '2026-08-31',
     tab:    q.get('tab')    || 'roi'
   };
-  const SER = window.PPserialise;
   const qs = () => {
     const p = new URLSearchParams();
-    p.set('scope', S.scope);
-    p.set('city', SER(S.cities)); p.set('sm', SER(S.managers)); p.set('src', SER(S.sources));
-    p.set('dev', SER(S.devs));    p.set('pstatus', SER(S.projStatus)); p.set('real', SER(S.realisation));
-    p.set('proj', SER(S.projects));
-    p.set('status', S.status); p.set('star', S.star ? '1' : '0'); p.set('period', S.period);
+    ['city','sm','status','projectStatus','source','developer','project','subProject','projectMarks'].forEach(k => {
+      if (S[k]) S[k].forEach(v => p.append(k, v));
+    });
     p.set('from', S.from); p.set('to', S.to);
     return p.toString();
   };
   window.PPqs = qs;
-  // Query object consumed by PPquery / PPprojects / PPoptions.
-  window.PPq = () => ({
-    cities: S.cities, managers: S.managers, sources: S.sources, devs: S.devs,
-    status: S.projStatus, realisation: S.realisation, projects: S.projects,
-    star: S.star, campStatus: S.status, period: S.period
-  });
-  // Human label for whatever region set is active.
-  window.PPcityLabel = () => {
-    const sc = window.PPscope();
-    if (S.cities && S.cities.length === 1) return S.cities[0];
-    if (S.cities && S.cities.length) return S.cities.length + ' regions';
-    return sc ? sc[0] : 'All Regions';
-  };
 
-  const CITIES = ['All Regions','Chennai','Coimbatore','Gurgaon','Noida','Kerala','Pune',
-                  'Mumbai','Bangalore','Hyderabad','Lucknow','Ahmedabad','Dubai'];
-  const BLR_SMS = ['All SM','Sumit','Kishore/Sumit','Rupali','Kishore','Kishore/Rupali'];
+  const CITIES = ['Chennai','Coimbatore','Gurgaon','Noida','Kerala','Pune','Mumbai','Bangalore','Hyderabad','Lucknow','Ahmedabad','Dubai'];
+  const BLR_SMS = ['Sumit','Kishore/Sumit','Rupali','Kishore','Kishore/Rupali'];
+  const PROJECT_STATUSES = ['Builtup','Sustenance','Realised','EOI Bankable','Non Bankable'];
+  const SOURCES = (window.PP.sourceWise['All Regions'] || [])
+      .filter(r => r.cost > 0)
+      .sort((a, b) => b.cost - a.cost)
+      .map(r => r.src);
+  const DEVELOPERS = ['Lodha','Godrej','Prestige','Sobha'];
+  const PROJECTS = ['Project Alpha', 'Project Beta', 'Project Gamma'];
+  const SUB_PROJECTS = [
+    'Sobha Hoskote', 'Provident Sunworth', 'Godrej Vanantara', 
+    'Mana The Right Life', 'Godrej Aveline', 'Nikko Homes 8', 
+    'Brigade Orchards', 'Ramky Fortuna', 'Brigade Eternia', 
+    'B&M Solecrest', 'Assetz Meru & You', 'L&T Elara Celestia', 
+    'Prestige Evergreen'
+  ];
 
-  function smsFor(city) {
-    if (city === 'Bangalore') return BLR_SMS.slice();
-    if (city === 'All Regions') return ['All SM'].concat([...new Set(window.PP.smWise.map(r => r.sm))]);
-    return ['All SM'].concat([...new Set(window.PP.smWise.filter(r => r.city === city).map(r => r.sm))]);
+  function smsFor(cities) {
+    let list = [];
+    if (!cities || cities.length === 0) {
+      list = window.PP.smWise.map(r => r.sm);
+    } else {
+      list = window.PP.smWise.filter(r => cities.includes(r.city)).map(r => r.sm);
+      if (cities.includes('Bangalore')) list = list.concat(BLR_SMS);
+    }
+    return [...new Set(list)];
   }
   window.PPsmsFor = smsFor;
-  // Legacy single-value accessors so the Bangalore-scoped pages keep working.
-  Object.defineProperty(S, 'city', { get: () => (S.cities && S.cities.length === 1) ? S.cities[0] : 'All Regions' });
-  Object.defineProperty(S, 'sm',   { get: () => (S.managers && S.managers.length === 1) ? S.managers[0] : 'All SM' });
-  Object.defineProperty(S, 'source', { get: () => (S.sources && S.sources.length === 1) ? S.sources[0] : 'All Sources' });
 
   /* ---------- formatting ---------- */
   const nfIN = new Intl.NumberFormat('en-IN');
@@ -80,14 +76,28 @@
     if (s.includes('hold'))    return '<span class="pill hold">Hold</span>';
     return '<span class="pill pause">Pause</span>';
   };
-  window.statusMatch = (rowStatus, filter) => {
-    if (filter === 'All Status') return true;
-    const s = String(rowStatus || '').toLowerCase();
-    if (filter === 'Live')  return s.startsWith('live');
-    if (filter === 'Hold')  return s.includes('hold');
-    if (filter === 'Pause') return !s.startsWith('live') && !s.includes('hold');
-    return true;
+  const arrMatch = (val, arr) => {
+    if (!arr || arr.length === 0) return true;
+    const v = String(val || '').trim().toLowerCase();
+    return arr.some(a => v === String(a).toLowerCase());
   };
+
+  window.statusMatch = (rowStatus, filters) => {
+    if (!filters || filters.length === 0) return true;
+    const s = String(rowStatus || '').toLowerCase();
+    return filters.some(f => {
+      if (f === 'Live')  return s.startsWith('live');
+      if (f === 'Hold')  return s.includes('hold');
+      if (f === 'Pause') return !s.startsWith('live') && !s.includes('hold');
+      return s === String(f).toLowerCase();
+    });
+  };
+
+  window.projectStatusMatch = (rowValue, filters) => arrMatch(rowValue, filters);
+  window.sourceMatch = (rowValue, filters) => arrMatch(rowValue, filters);
+  window.developerMatch = (rowValue, filters) => arrMatch(rowValue, filters);
+  window.projectMatch = (rowValue, filters) => arrMatch(rowValue, filters);
+  window.subProjectMatch = (rowValue, filters) => arrMatch(rowValue, filters);
 
   /* ---------- icons ---------- */
   const IC = {
@@ -129,10 +139,7 @@
     const blob = new Blob(['\uFEFF' + rows], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = filename || 'roi_export.csv';
-    a.click();
-    URL.revokeObjectURL(a.href);
-    toast('Excel (CSV) downloaded');
+    
   };
   window.exportVisibleTable = filename => {
     const panel = document.querySelector('.tab-panel.active') || document;
@@ -218,187 +225,103 @@
         <div class="page-title" id="pageTitle"></div>
       </div>
       <div class="top-actions">
-        <button class="btn" id="btnPDF">Export PDF</button>
-        <button class="btn accent" id="btnXLS">Export Excel</button>
+               <button class="btn accent" id="btnXLS">Export Excel</button>
       </div>`;
-    document.getElementById('menuBtn').onclick = () =>
-      document.getElementById('sidebar').classList.toggle('open');
-    document.getElementById('btnPDF').onclick = () => window.print();
-    document.getElementById('btnXLS').onclick = () =>
-      exportVisibleTable(('pp_roi_' + (S.city || 'all') + '_' + page + '.csv').replace(/\s+/g, '_').toLowerCase());
+        exportVisibleTable(('pp_roi_' + (S.city || 'all') + '_' + page + '.csv').replace(/\s+/g, '_').toLowerCase());
     updateHeadings(page, title);
   }
 
   function updateHeadings(page, title) {
     const secByTab = { roi: 'ROI Summary', sm: 'SM / Manager View', project: 'Project Performance' };
     const section = page === 'index' ? secByTab[S.tab] || 'ROI Summary' : (title || '');
-    const cityLbl = window.PPcityLabel();
-    const smLbl = (S.managers && S.managers.length === 1) ? S.managers[0]
-                : (S.managers && S.managers.length) ? S.managers.length + ' SMs' : 'All SM';
     document.getElementById('crumbs').innerHTML =
-      `<span class="sec">${section}</span> / <b>${cityLbl}</b> / ${smLbl} / ${window.PPperiod(S.period).label}`;
-    const prefix = page === 'index' ? (smLbl !== 'All SM' ? smLbl : cityLbl) : cityLbl;
+      `<span class="sec">${section}</span> / <b>${S.city}</b> / ${S.sm}`;
+    const prefix = page === 'index'
+      ? (S.sm !== 'All SM' ? S.sm : S.city)
+      : S.city;
     document.getElementById('pageTitle').textContent = prefix + ' \u2013 ' + (title || section);
   }
   window.PPupdateHeadings = updateHeadings;
 
-  /* ---------- multi-select control ---------- */
-  let msSeq = 0;
-  function multiSelect(host, cfg) {
-    const id = 'ms' + (++msSeq);
-    const sel = new Set(cfg.value || []);
-    const opts = cfg.options;
-    host.innerHTML = `
-      <label>${cfg.label}</label>
-      <div class="ms" id="${id}">
-        <button type="button" class="ms-btn"></button>
-        <div class="ms-pop">
-          ${opts.length > 8 ? `<input class="ms-search" placeholder="Search ${cfg.label.toLowerCase()}...">` : ''}
-          <div class="ms-acts"><button data-a="all">Select all</button><button data-a="none">Clear</button></div>
-          <div class="ms-list"></div>
-        </div>
-      </div>`;
-    const root = host.querySelector('#' + id);
-    const btn = root.querySelector('.ms-btn');
-    const list = root.querySelector('.ms-list');
-    const search = root.querySelector('.ms-search');
-
-    function label() {
-      if (!sel.size) return cfg.allLabel;
-      if (sel.size === 1) return [...sel][0];
-      return `${cfg.allLabel.replace(/^All /, '')} <span class="cnt">${sel.size}</span>`;
-    }
-    function paint() {
-      btn.innerHTML = label();
-      const term = (search && search.value || '').toLowerCase();
-      const shown = opts.filter(o => !term || o.toLowerCase().includes(term));
-      list.innerHTML = shown.length
-        ? shown.slice(0, 300).map(o =>
-            `<label class="ms-opt"><input type="checkbox" value="${o.replace(/"/g, '&quot;')}" ${sel.has(o) ? 'checked' : ''}><span title="${o.replace(/"/g, '&quot;')}">${o}</span></label>`).join('')
-        : '<div class="ms-empty">No matches</div>';
-    }
-    function commit() { cfg.onChange(sel.size ? [...sel] : null); }
-
-    btn.onclick = e => {
-      e.stopPropagation();
-      document.querySelectorAll('.ms.open').forEach(m => { if (m !== root) m.classList.remove('open'); });
-      root.classList.toggle('open');
-      if (root.classList.contains('open') && search) search.focus();
-    };
-    root.querySelector('.ms-pop').onclick = e => e.stopPropagation();
-    if (search) search.oninput = paint;
-    list.onchange = e => {
-      if (e.target.type !== 'checkbox') return;
-      e.target.checked ? sel.add(e.target.value) : sel.delete(e.target.value);
-      btn.innerHTML = label();
-      commit();
-    };
-    root.querySelectorAll('.ms-acts button').forEach(b => b.onclick = () => {
-      sel.clear();
-      if (b.dataset.a === 'all') opts.forEach(o => sel.add(o));
-      paint(); commit();
-    });
-    paint();
-  }
-  document.addEventListener('click', () => document.querySelectorAll('.ms.open').forEach(m => m.classList.remove('open')));
-
-  /* ---------- filter bar ---------- */
   function renderFilters() {
     const el = document.getElementById('filters');
     if (!el) return;
+    
+    const mkOpts = (opts, selArr) => opts.map(o => `<option value="${o}" ${(selArr||[]).includes(o) ? 'selected' : ''}>${o}</option>`).join('');
+
     el.innerHTML = `
-      <div class="f-group" id="fgCity"></div>
-      <div class="f-group" id="fgSM"></div>
-      <div class="f-group" id="fgSource"></div>
-      <div class="f-group" id="fgDev"></div>
-      <div class="f-group" id="fgPStatus"></div>
-      <div class="f-group" id="fgReal"></div>
-      <div class="f-group" id="fgProj"></div>
-      <div class="f-group"><label for="fStatus">Campaign Status</label>
-        <select id="fStatus">${['All Status','Live','Pause','Hold'].map(x => `<option ${x === S.status ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
-      <div class="f-group" style="grid-column:1/-1">
-        <label>Period</label>
-        <div class="periods" id="fPeriods">
-          ${window.PPperiods.map(p => `<button class="per ${p.id === S.period ? 'active' : ''}" data-p="${p.id}">${p.label}</button>`).join('')}
-          <span class="per-note" id="perNote"></span>
-          <span style="flex:1"></span>
-          <label class="toggle ${S.star ? 'on' : ''}" id="starTog">
-            <input type="checkbox" id="fStar" ${S.star ? 'checked' : ''}> Focus / Star projects only</label>
-          <span class="daterange">
-            <input type="date" id="fFrom" value="${S.from}"><span>&ndash;</span><input type="date" id="fTo" value="${S.to}">
-          </span>
-        </div>
+      <div class="f-group"><label>Date Range</label>
+        <input type="text" id="fDateRange" class="form-control" style="width:100%; height:38px; border:1px solid #DDE1E8; border-radius:9px; background:#FBFCFD; padding:0 11px; font-size:12.8px; font-weight:600; color:#111; cursor:pointer;" readonly />
       </div>
-      <div class="f-group" style="grid-column:1/-1"><div class="chips" id="fChips"></div></div>`;
+      <div class="f-group"><label for="fCity">Select City</label>
+        <select id="fCity" multiple="multiple">${mkOpts(CITIES, S.city)}</select></div>
+      <div class="f-group"><label for="fSM">SM Name</label>
+        <select id="fSM" multiple="multiple"></select></div>
+      <div class="f-group"><label for="fStatus">Campaign Status</label>
+        <select id="fStatus" multiple="multiple">${mkOpts(['Live','Pause','Hold'], S.status)}</select></div>
+      <div class="f-group"><label for="fProjectStatus">Project Status</label>
+        <select id="fProjectStatus" multiple="multiple">${mkOpts(PROJECT_STATUSES, S.projectStatus)}</select></div>
+      <div class="f-group"><label for="fSource">Source</label>
+        <select id="fSource" multiple="multiple">${mkOpts(SOURCES, S.source)}</select></div>
+      <div class="f-group"><label for="fDeveloper">Developer</label>
+        <select id="fDeveloper" multiple="multiple">${mkOpts(DEVELOPERS, S.developer)}</select></div>
+      <div class="f-group"><label for="fProject">Project</label>
+        <select id="fProject" multiple="multiple">${mkOpts(PROJECTS, S.project)}</select></div>
+      <div class="f-group"><label for="fSubProject">Sub Project</label>
+        <select id="fSubProject" multiple="multiple">${mkOpts(SUB_PROJECTS, S.subProject)}</select></div>
+      <div class="f-group"><label for="fProjectMarks">Project Marks</label>
+        <select id="fProjectMarks" multiple="multiple">${mkOpts(['Focus Project','AOP Project'], S.projectMarks)}</select></div>
+    `;
 
-    multiSelect(document.getElementById('fgCity'),    { label: 'Region', allLabel: 'All Regions', options: PPoptions('cities'), value: S.cities, onChange: v => { S.cities = v; emit(); } });
-    multiSelect(document.getElementById('fgSM'),      { label: 'SM / Manager', allLabel: 'All SM', options: PPoptions('managers'), value: S.managers, onChange: v => { S.managers = v; emit(); } });
-    multiSelect(document.getElementById('fgSource'),  { label: 'Source', allLabel: 'All Sources', options: PPoptions('sources'), value: S.sources, onChange: v => { S.sources = v; emit(); } });
-    multiSelect(document.getElementById('fgDev'),     { label: 'Developer', allLabel: 'All Developers', options: PPoptions('developers'), value: S.devs, onChange: v => { S.devs = v; emit(); } });
-    multiSelect(document.getElementById('fgPStatus'), { label: 'Project Status', allLabel: 'All Project Status', options: PPoptions('status'), value: S.projStatus, onChange: v => { S.projStatus = v; emit(); } });
-    multiSelect(document.getElementById('fgReal'),    { label: 'Realisation', allLabel: 'All Realisation', options: PPoptions('realisation'), value: S.realisation, onChange: v => { S.realisation = v; emit(); } });
-    multiSelect(document.getElementById('fgProj'),    { label: 'Project', allLabel: 'All Projects', options: PPoptions('projects'), value: S.projects, onChange: v => { S.projects = v; emit(); } });
+    function fillSM() {
+      const sel = el.querySelector('#fSM');
+      const valid = smsFor(S.city);
+      S.sm = (S.sm||[]).filter(sm => valid.includes(sm));
+      sel.innerHTML = mkOpts(valid, S.sm);
+      if ($(sel).hasClass('select2-hidden-accessible')) {
+        $(sel).trigger('change.select2');
+      }
+    }
+    fillSM();
 
-    el.querySelector('#fStatus').onchange = e => { S.status = e.target.value; emit(); };
-    el.querySelector('#fStar').onchange = e => { S.star = e.target.checked; emit(); };
-    el.querySelectorAll('.per').forEach(b => b.onclick = () => { S.period = b.dataset.p; emit(); });
-    el.querySelector('#perNote').textContent = window.PPperiod(S.period).note;
-    el.querySelector('#fFrom').onchange = e => { S.from = e.target.value; emit(); };
-    el.querySelector('#fTo').onchange = e => { S.to = e.target.value; emit(); };
-    renderChips();
-  }
-
-  function renderChips() {
-    const box = document.getElementById('fChips');
-    if (!box) return;
-    const groups = [
-      ['Region', S.cities, v => S.cities = v], ['SM', S.managers, v => S.managers = v],
-      ['Source', S.sources, v => S.sources = v], ['Developer', S.devs, v => S.devs = v],
-      ['Status', S.projStatus, v => S.projStatus = v], ['Realisation', S.realisation, v => S.realisation = v],
-      ['Project', S.projects, v => S.projects = v]
-    ];
-    let html = '';
-    groups.forEach(([name, list], gi) => {
-      if (!list) return;
-      list.slice(0, 4).forEach((v, i) => {
-        html += `<span class="chip"><b>${name}:</b> ${v}<button data-g="${gi}" data-i="${i}" title="Remove">&times;</button></span>`;
-      });
-      if (list.length > 4) html += `<span class="chip">+${list.length - 4} more ${name.toLowerCase()}</span>`;
+    // Initialize Select2
+    $('#fCity, #fSM, #fStatus, #fProjectStatus, #fSource, #fDeveloper, #fProject, #fSubProject, #fProjectMarks').select2({
+      placeholder: "All",
+      allowClear: true,
+      width: '100%'
+    }).on('change', function(e) {
+      const id = e.target.id;
+      const val = $(this).val() || [];
+      if (id === 'fCity') { S.city = val; fillSM(); emit(); }
+      if (id === 'fSM') { S.sm = val; emit(); }
+      if (id === 'fStatus') { S.status = val; emit(); }
+      if (id === 'fProjectStatus') { S.projectStatus = val; emit(); }
+      if (id === 'fSource') { S.source = val; emit(); }
+      if (id === 'fDeveloper') { S.developer = val; emit(); }
+      if (id === 'fProject') { S.project = val; emit(); }
+      if (id === 'fSubProject') { S.subProject = val; emit(); }
+      if (id === 'fProjectMarks') { S.projectMarks = val; emit(); }
     });
-    if (S.star) html += `<span class="chip"><b>Focus / Star only</b><button data-star="1">&times;</button></span>`;
-    if (html) html += `<span class="chip clear" id="clearAll">Clear all filters</span>`;
-    box.innerHTML = html;
-    box.querySelectorAll('button[data-g]').forEach(b => b.onclick = () => {
-      const [name, list, setter] = groups[+b.dataset.g];
-      const next = list.filter((_, i) => i !== +b.dataset.i);
-      setter(next.length ? next : null); emit();
-    });
-    const st = box.querySelector('button[data-star]');
-    if (st) st.onclick = () => { S.star = false; emit(); };
-    const ca = box.querySelector('#clearAll');
-    if (ca) ca.onclick = () => {
-      S.cities = S.managers = S.sources = S.devs = S.projStatus = S.realisation = S.projects = null;
-      S.star = false; S.status = 'All Status'; emit();
-    };
-  }
 
-  /* ---------- region (login) scope bar ---------- */
-  function renderScope() {
-    const el = document.getElementById('scopebar');
-    if (!el) return;
-    const regions = ['All Regions'].concat(window.PP.dims.cities);
-    el.innerHTML = `
-      <span class="lbl">Viewing as</span>
-      <select id="fScope">${regions.map(r => `<option ${r === S.scope ? 'selected' : ''}>${r === 'All Regions' ? 'National (all regions)' : r + ' - regional sales'}</option>`).join('')}</select>
-      <span class="warn">Regional view hides other regions everywhere. View shaping only &mdash; not a security boundary.</span>`;
-    el.querySelector('#fScope').onchange = e => {
-      const v = e.target.value;
-      S.scope = v.startsWith('National') ? 'All Regions' : v.split(' - ')[0];
-      S.cities = S.managers = S.projects = null;
-      emit(); renderFilters();
-    };
+    // Initialize Daterangepicker
+    $('#fDateRange').daterangepicker({
+      startDate: moment(S.from),
+      endDate: moment(S.to),
+      ranges: {
+         'Today': [moment(), moment()],
+         'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+         'Last 15 Days': [moment().subtract(14, 'days'), moment()],
+         'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+         'This Month': [moment().startOf('month'), moment().endOf('month')]
+      },
+      locale: { format: 'YYYY-MM-DD' }
+    }, function(start, end) {
+      S.from = start.format('YYYY-MM-DD');
+      S.to = end.format('YYYY-MM-DD');
+      emit();
+      toast('Period updated \u2014 figures reflect the 5 Aug 2026 MIS snapshot');
+    });
   }
-  window.PPrenderScope = renderScope;
 
   function emit() {
     history.replaceState(null, '', location.pathname + '?' + qs() + (S.tab ? '&tab=' + S.tab : ''));
@@ -424,17 +347,10 @@
   window.PPshell = function (page, title) {
     renderSidebar(page);
     renderTopbar(page, title);
-    renderScope();
     renderFilters();
     document.addEventListener('pp:filters', () => {
       renderSidebar(page);
       updateHeadings(page, title);
-      renderChips();
-      const pn = document.getElementById('perNote');
-      if (pn) pn.textContent = window.PPperiod(S.period).note;
-      document.querySelectorAll('.per').forEach(b => b.classList.toggle('active', b.dataset.p === S.period));
-      const stg = document.getElementById('starTog');
-      if (stg) stg.classList.toggle('on', S.star);
     });
   };
 })();
