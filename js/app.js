@@ -60,6 +60,18 @@
   }
   window.PPsmsFor = smsFor;
 
+  /* ---------- compact labels for headers/titles ----------
+     Arrays must NEVER be dumped raw into headings. */
+  const listLabel = (arr, allText, unit, total) => {
+    const a = arr || [];
+    if (!a.length || (total && a.length >= total)) return allText;
+    if (a.length === 1) return a[0];
+    return a.length + ' ' + unit;
+  };
+  window.PPcityLabel = () => listLabel(S.city, 'All Regions', 'Cities', CITIES.length);
+  window.PPsmLabel   = () => listLabel(S.sm, 'All SM', 'SMs', smsFor(S.city).length);
+  window.PPsrcLabel  = () => listLabel(S.source, 'All Sources', 'Sources', SOURCES.length);
+
   /* ---------- formatting ---------- */
   const nfIN = new Intl.NumberFormat('en-IN');
   window.fmtN  = v => v == null ? '\u2014' : nfIN.format(Math.round(v || 0));
@@ -227,18 +239,19 @@
       <div class="top-actions">
                <button class="btn accent" id="btnXLS">Export Excel</button>
       </div>`;
-        exportVisibleTable(('pp_roi_' + (S.city || 'all') + '_' + page + '.csv').replace(/\s+/g, '_').toLowerCase());
+        exportVisibleTable(('pp_roi_' + PPcityLabel() + '_' + page + '.csv').replace(/\s+/g, '_').toLowerCase());
     updateHeadings(page, title);
   }
 
   function updateHeadings(page, title) {
     const secByTab = { roi: 'ROI Summary', sm: 'SM / Manager View', project: 'Project Performance' };
     const section = page === 'index' ? secByTab[S.tab] || 'ROI Summary' : (title || '');
+    const cityL = PPcityLabel(), smL = PPsmLabel();
     document.getElementById('crumbs').innerHTML =
-      `<span class="sec">${section}</span> / <b>${S.city}</b> / ${S.sm}`;
+      `<span class="sec">${section}</span> / <b>${cityL}</b> / ${smL}`;
     const prefix = page === 'index'
-      ? (S.sm !== 'All SM' ? S.sm : S.city)
-      : S.city;
+      ? (smL !== 'All SM' ? smL : cityL)
+      : cityL;
     document.getElementById('pageTitle').textContent = prefix + ' \u2013 ' + (title || section);
   }
   window.PPupdateHeadings = updateHeadings;
