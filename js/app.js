@@ -246,62 +246,144 @@
   function renderFilters() {
     const el = document.getElementById('filters');
     if (!el) return;
-    
-    const mkOpts = (opts, selArr) => opts.map(o => `<option value="${o}" ${(selArr||[]).includes(o) ? 'selected' : ''}>${o}</option>`).join('');
 
-    el.innerHTML = `
-      <div class="f-group"><label>Date Range</label>
-        <input type="text" id="fDateRange" class="form-control" style="width:100%; height:38px; border:1px solid #DDE1E8; border-radius:9px; background:#FBFCFD; padding:0 11px; font-size:12.8px; font-weight:600; color:#111; cursor:pointer;" readonly />
-      </div>
-      <div class="f-group"><label for="fCity">Select City</label>
-        <select id="fCity" multiple="multiple">${mkOpts(CITIES, S.city)}</select></div>
-      <div class="f-group"><label for="fSM">SM Name</label>
-        <select id="fSM" multiple="multiple"></select></div>
-      <div class="f-group"><label for="fStatus">Campaign Status</label>
-        <select id="fStatus" multiple="multiple">${mkOpts(['Live','Pause','Hold'], S.status)}</select></div>
-      <div class="f-group"><label for="fProjectStatus">Project Status</label>
-        <select id="fProjectStatus" multiple="multiple">${mkOpts(PROJECT_STATUSES, S.projectStatus)}</select></div>
-      <div class="f-group"><label for="fSource">Source</label>
-        <select id="fSource" multiple="multiple">${mkOpts(SOURCES, S.source)}</select></div>
-      <div class="f-group"><label for="fDeveloper">Developer</label>
-        <select id="fDeveloper" multiple="multiple">${mkOpts(DEVELOPERS, S.developer)}</select></div>
-      <div class="f-group"><label for="fProject">Project</label>
-        <select id="fProject" multiple="multiple">${mkOpts(PROJECTS, S.project)}</select></div>
-      <div class="f-group"><label for="fSubProject">Sub Project</label>
-        <select id="fSubProject" multiple="multiple">${mkOpts(SUB_PROJECTS, S.subProject)}</select></div>
-      <div class="f-group"><label for="fProjectMarks">Project Marks</label>
-        <select id="fProjectMarks" multiple="multiple">${mkOpts(['Focus Project','AOP Project'], S.projectMarks)}</select></div>
-    `;
+    /* ---------- Excel-style checkbox multi-selects ---------- */
+    const MS = [
+      { id: 'msCity',          key: 'city',          label: 'Select City',     opts: () => CITIES },
+      { id: 'msSM',            key: 'sm',            label: 'SM Name',         opts: () => smsFor(S.city) },
+      { id: 'msStatus',        key: 'status',        label: 'Campaign Status', opts: () => ['Live','Pause','Hold'] },
+      { id: 'msProjectStatus', key: 'projectStatus', label: 'Project Status',  opts: () => PROJECT_STATUSES },
+      { id: 'msSource',        key: 'source',        label: 'Source',          opts: () => SOURCES },
+      { id: 'msDeveloper',     key: 'developer',     label: 'Developer',       opts: () => DEVELOPERS },
+      { id: 'msProject',       key: 'project',       label: 'Project',         opts: () => PROJECTS },
+      { id: 'msSubProject',    key: 'subProject',    label: 'Sub Project',     opts: () => SUB_PROJECTS },
+      { id: 'msProjectMarks',  key: 'projectMarks',  label: 'Project Marks',   opts: () => ['Focus Project','AOP Project'] }
+    ];
 
-    function fillSM() {
-      const sel = el.querySelector('#fSM');
-      const valid = smsFor(S.city);
-      S.sm = (S.sm||[]).filter(sm => valid.includes(sm));
-      sel.innerHTML = mkOpts(valid, S.sm);
-      if ($(sel).hasClass('select2-hidden-accessible')) {
-        $(sel).trigger('change.select2');
-      }
+    el.innerHTML =
+      `<div class="f-group"><label>Date Range</label>
+        <input type="text" id="fDateRange" readonly />
+      </div>` +
+      MS.map(m => `
+      <div class="f-group"><label>${m.label}</label>
+        <div class="ms" id="${m.id}" data-key="${m.key}">
+          <button type="button" class="ms-btn" aria-haspopup="listbox">
+            <span class="ms-text">All</span><span class="ms-caret">\u25BE</span>
+          </button>
+          <div class="ms-panel">
+            <input type="text" class="ms-search" placeholder="Search\u2026">
+            <div class="ms-actions">
+              <button type="button" data-act="all">Select All</button>
+              <button type="button" data-act="inv">Select Inverse</button>
+              <button type="button" data-act="none">Clear</button>
+            </div>
+            <div class="ms-list"></div>
+          </div>
+        </div>
+      </div>`).join('');
+
+    const byId = id => el.querySelector('#' + id);
+
+    function msRenderList(m) {
+      const box = byId(m.id);
+      const sel = S[m.key] || [];
+      box.querySelector('.ms-list').innerHTML =
+        m.opts().map(o => `
+          <label class="ms-opt" title="${o}">
+            <input type="checkbox" value="${o}" ${sel.includes(o) ? 'checked' : ''}>
+            <span>${o}</span>
+          </label>`).join('') ||
+        '<div class="ms-none">No options</div>';
+      msLabel(m);
     }
-    fillSM();
 
-    // Initialize Select2
-    $('#fCity, #fSM, #fStatus, #fProjectStatus, #fSource, #fDeveloper, #fProject, #fSubProject, #fProjectMarks').select2({
-      placeholder: "All",
-      allowClear: true,
-      width: '100%'
-    }).on('change', function(e) {
-      const id = e.target.id;
-      const val = $(this).val() || [];
-      if (id === 'fCity') { S.city = val; fillSM(); emit(); }
-      if (id === 'fSM') { S.sm = val; emit(); }
-      if (id === 'fStatus') { S.status = val; emit(); }
-      if (id === 'fProjectStatus') { S.projectStatus = val; emit(); }
-      if (id === 'fSource') { S.source = val; emit(); }
-      if (id === 'fDeveloper') { S.developer = val; emit(); }
-      if (id === 'fProject') { S.project = val; emit(); }
-      if (id === 'fSubProject') { S.subProject = val; emit(); }
-      if (id === 'fProjectMarks') { S.projectMarks = val; emit(); }
+    function msLabel(m) {
+      const box = byId(m.id);
+      const sel = S[m.key] || [];
+      const n = m.opts().length;
+      box.querySelector('.ms-text').textContent =
+        !sel.length        ? 'All'
+        : sel.length === 1 ? sel[0]
+        : sel.length === n ? 'All (' + n + ')'
+        :                    sel.length + ' selected';
+      box.classList.toggle('has-sel', sel.length > 0);
+    }
+
+    function msApply(m, arr) {
+      S[m.key] = arr;
+      if (m.key === 'city') {
+        const valid = smsFor(S.city);
+        S.sm = (S.sm || []).filter(v => valid.includes(v));
+        msRenderList(MS.find(x => x.key === 'sm'));
+      }
+      msLabel(m);
+      emit();
+    }
+
+    function msSearch(box, q) {
+      const needle = q.trim().toLowerCase();
+      box.querySelectorAll('.ms-opt').forEach(o => {
+        o.style.display =
+          !needle || o.textContent.toLowerCase().includes(needle) ? '' : 'none';
+      });
+    }
+
+    function closeAll(except) {
+      el.querySelectorAll('.ms.open').forEach(b => {
+        if (b !== except) b.classList.remove('open');
+      });
+    }
+
+    MS.forEach(m => {
+      msRenderList(m);
+      const box = byId(m.id);
+
+      box.querySelector('.ms-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        const willOpen = !box.classList.contains('open');
+        closeAll(box);
+        box.classList.toggle('open', willOpen);
+        if (willOpen) {
+          const s = box.querySelector('.ms-search');
+          s.value = '';
+          msSearch(box, '');
+          s.focus();
+        }
+      });
+
+      box.querySelector('.ms-panel').addEventListener('click', e => e.stopPropagation());
+
+      box.querySelector('.ms-search').addEventListener('input', e => msSearch(box, e.target.value));
+
+      /* Select All / Select Inverse / Clear act on the currently visible
+         (searched) options - same behaviour as the Excel filter dropdown */
+      box.querySelector('.ms-actions').addEventListener('click', e => {
+        const act = e.target.dataset.act;
+        if (!act) return;
+        const visible = [...box.querySelectorAll('.ms-opt')]
+          .filter(o => o.style.display !== 'none');
+        const cur = new Set(S[m.key] || []);
+        visible.forEach(o => {
+          const cb = o.querySelector('input');
+          if (act === 'all')  { cb.checked = true;  cur.add(cb.value); }
+          if (act === 'none') { cb.checked = false; cur.delete(cb.value); }
+          if (act === 'inv')  {
+            cb.checked = !cb.checked;
+            cb.checked ? cur.add(cb.value) : cur.delete(cb.value);
+          }
+        });
+        msApply(m, [...cur]);
+      });
+
+      box.querySelector('.ms-list').addEventListener('change', e => {
+        if (e.target.type !== 'checkbox') return;
+        const cur = new Set(S[m.key] || []);
+        e.target.checked ? cur.add(e.target.value) : cur.delete(e.target.value);
+        msApply(m, [...cur]);
+      });
     });
+
+    document.addEventListener('click', () => closeAll());
 
     // Initialize Daterangepicker
     $('#fDateRange').daterangepicker({
