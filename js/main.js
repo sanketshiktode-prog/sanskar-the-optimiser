@@ -575,9 +575,17 @@
 
     } else if (isPlannedOrUnplanned) {
 
+      const projRev = p.targetRev || 0;
+      const actRev = p.actualRev || 0;
+
       extraCols = `
         <td>12</td>
         <td>3</td>
+        <td>${projRev ? fmtR(projRev) : '—'}</td>
+        <td>${actRev ? fmtR(actRev) : '—'}</td>
+        <td>${actRev ? fmtR(projRev - actRev) : '—'}</td>
+        <td>${projRev ? fmtPct(((p.totalBudget || 0) / projRev) * 100) : '—'}</td>
+        <td>${actRev ? fmtPct(((p.spent || 0) / actRev) * 100) : '—'}</td>
       `;
     }
 
@@ -647,7 +655,12 @@
 
       cols.push(
         'Site Visit',
-        'Booking Done'
+        'Booking Done',
+        'Projected Revenue',
+        'Actual Revenue',
+        'Revenue Gap',
+        '% Projected NBR',
+        '% Actual NBR'
       );
     }
 
@@ -701,7 +714,12 @@
 
       extraTotals =
         `<td>120</td>
-         <td>35</td>`;
+         <td>35</td>
+         <td>${t.tr ? fmtR(t.tr) : '—'}</td>
+         <td>—</td>
+         <td>—</td>
+         <td>${t.tr ? fmtPct((t.tb / t.tr) * 100) : '—'}</td>
+         <td>—</td>`;
     }
 
     const totals =
